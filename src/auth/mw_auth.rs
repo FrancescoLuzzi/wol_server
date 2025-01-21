@@ -1,20 +1,21 @@
-use crate::{app_state::SharedAppState, ctx::Ctx};
+use super::ctx::Ctx;
+use crate::app_state::SharedAuthState;
 use axum::{
     body::Body,
     extract::{Request, State},
     http::StatusCode,
     middleware::Next,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
     Extension,
 };
-use bb8_redis::redis::AsyncCommands;
-use tower_cookies::{cookie::time::Duration, Cookie, Cookies};
-use uuid::Uuid;
-
-use super::session_key::SessionKey;
+use jsonwebtoken::decode;
+use jsonwebtoken::{DecodingKey, Validation};
+use secrecy::ExposeSecret;
+use tower_cookies::{Cookie, Cookies};
 
 pub type CtxResult = Result<Ctx, CtxExtError>;
-pub const AUTH_COOKIE: &str = "x-session";
+pub const AUTH_COOKIE: &str = "WOL_AUTH_TOKEN";
+pub const REFRESH_COOKIE: &str = "WOL_REFRESh_TOKEN";
 
 pub async fn mw_ctx_require(
     Extension(ctx_res): Extension<CtxResult>,
@@ -25,12 +26,12 @@ pub async fn mw_ctx_require(
 
     match ctx_res {
         Ok(_) => Ok(next.run(req).await),
-        Err(_) => Ok(Redirect::to("/login").into_response()),
+        Err(_) => Ok(StatusCode::UNAUTHORIZED.into_response()),
     }
 }
 
 pub async fn mw_ctx_resolver(
-    State(state): State<SharedAppState>,
+    State(state): State<SharedAuthState>,
     cookies: Cookies,
     mut req: Request<Body>,
     next: Next,
@@ -49,28 +50,17 @@ pub async fn mw_ctx_resolver(
     next.run(req).await
 }
 
-async fn ctx_resolve(state: SharedAppState, cookies: &Cookies) -> CtxResult {
-    let mut conn = state
-        .redis_pool
-        .get()
-        .await
-        .map_err(|_| CtxExtError::SessionAccessError)?;
-    // user jwt
-    let session_key: SessionKey = cookies
+async fn ctx_resolve(state: SharedAuthState, cookies: &Cookies) -> CtxResult {
+    let auth_token = cookies
         .get(AUTH_COOKIE)
-        .ok_or(CtxExtError::TokenNotInCookie)?
-        .value()
-        .try_into()
-        .map_err(|_| CtxExtError::TokenMalformed)?;
-    let mut auth_cookie = Cookie::new(AUTH_COOKIE, session_key.as_ref().to_string());
-    auth_cookie.set_max_age(Duration::seconds(10));
-    auth_cookie.set_http_only(true);
-    cookies.add(auth_cookie);
-    let user_id: Uuid = conn
-        .get_ex(&session_key, redis::Expiry::EX(10))
-        .await
-        .map_err(|_| CtxExtError::SessionNotFound)?;
-    Ctx::new(user_id, session_key).map_err(|_| CtxExtError::CtxCreateFail(user_id.to_string()))
+        .ok_or(CtxExtError::TokenNotInCookie)?;
+    decode::<Ctx>(
+        auth_token.value(),
+        &DecodingKey::from_secret(state.hmac_secret.expose_secret().as_bytes()),
+        &Validation::default(),
+    )
+    .map(|x| x.claims)
+    .map_err(|_| CtxExtError::TokenMalformed)
 }
 
 #[derive(Clone, Debug)]

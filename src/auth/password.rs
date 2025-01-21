@@ -1,4 +1,4 @@
-use crate::{auth::error::AuthError, telemetry::spawn_blocking_with_tracing};
+use crate::{auth::error::AuthError, model::user::User, telemetry::spawn_blocking_with_tracing};
 use anyhow::Context;
 use argon2::{password_hash::SaltString, Algorithm, Argon2, Params, PasswordHasher, Version};
 use argon2::{PasswordHash, PasswordVerifier};
@@ -9,7 +9,7 @@ use sqlx::SqlitePool;
 
 #[derive(Debug, Deserialize)]
 pub struct Credentials {
-    pub email_or_user: String,
+    pub email: String,
     pub password: SecretString,
 }
 
@@ -36,23 +36,24 @@ pub fn is_password_strong(password: &SecretString) -> bool {
     }
     score == 15
 }
+
 #[tracing::instrument(name = "Get stored credentials", skip(username, pool))]
-async fn get_stored_credentials(
+async fn get_user_by_email(
     username: &str,
     pool: &SqlitePool,
-) -> Result<Option<(uuid::Uuid, SecretString)>, anyhow::Error> {
+) -> Result<Option<(User, SecretString)>, anyhow::Error> {
     let row = sqlx::query!(
         r#"
-        SELECT id, password
-        FROM tbl_user 
-        WHERE (username = $1 OR email = $1 )
+        SELECT id as "id: uuid::Uuid", password
+        FROM users
+        WHERE email = $1
         "#,
         username,
     )
     .fetch_optional(pool)
     .await
     .context("Failed to performed a query to retrieve stored credentials.")?
-    .map(|row| (row.id, SecretString::new(row.password)));
+    .map(|row| (row.id, SecretString::from(row.password)));
     Ok(row)
 }
 
@@ -61,7 +62,8 @@ pub async fn validate_credentials(
     credentials: Credentials,
     pool: &SqlitePool,
 ) -> Result<uuid::Uuid, AuthError> {
-    let mut user_id = None;
+    // TODO: return User instead of user_id
+    let mut user = None;
     let mut expected_password_hash = SecretString::from(
         "$argon2id$v=19$m=15000,t=2,p=1$\
         gZiV/M1gPc22ElAH/Jh1Hw$\
@@ -70,7 +72,7 @@ pub async fn validate_credentials(
     );
 
     if let Some((stored_user_id, stored_password_hash)) =
-        get_stored_credentials(&credentials.email_or_user, pool).await?
+        get_user_by_email(&credentials.email, pool).await?
     {
         user_id = Some(stored_user_id);
         expected_password_hash = stored_password_hash;
@@ -117,7 +119,7 @@ pub fn hash_password_sync(password: SecretString) -> Result<SecretString, anyhow
     )
     .hash_password(password.expose_secret().as_bytes(), &salt)?
     .to_string();
-    Ok(SecretString::new(password_hash))
+    Ok(SecretString::from(password_hash))
 }
 
 pub async fn hash_password(password: SecretString) -> Result<SecretString, anyhow::Error> {

@@ -1,16 +1,79 @@
+use axum::{
+    self, middleware,
+    response::Response,
+    routing::{get, post},
+    Router,
+};
 use sqlx::sqlite::SqlitePoolOptions;
-use wol_server::{configuration::load_settings, telemetry::*};
+use std::net::SocketAddr;
+use tower_cookies::CookieManagerLayer;
+use tower_http::services::ServeDir;
+use wol_server::{
+    app_state::{AppState, AuthState, SharedAppState, SharedAuthState},
+    auth::mw_auth,
+    configuration::load_settings,
+    migration::db_migration,
+    // routes::{health_check, home, index, login, logout, signup, ticket, validate},
+    telemetry::{get_subscriber, init_subscriber},
+};
 
-fn main() {
-    println!("Hello, world!");
-    let settings = load_settings().unwrap();
-    let db_pool = SqlitePoolOptions::new().connect_lazy_with(settings.database.on_file());
+#[tokio::main]
+async fn main() {
+    let base_path = std::env::current_dir().expect("Failed to determine the current directory");
+    let settings = load_settings(&base_path.join("configuration")).unwrap();
     if settings.logging.enabled {
         let telemetry_subscriber = get_subscriber(
-            "ticket_app".to_string(),
+            "wol_server".to_string(),
             settings.logging.level,
-            std::io::Stdout,
+            std::io::stdout,
         );
         init_subscriber(telemetry_subscriber);
     }
+    let db_pool = SqlitePoolOptions::new().connect_lazy_with(settings.database.on_file());
+    db_migration(&db_pool).await.expect("can't run migrations");
+    let auth_state = SharedAuthState::new(AuthState {
+        hmac_secret: settings.application.hmac_secret.clone(),
+    });
+    let app_state = SharedAppState::new(AppState {
+        base_url: settings.application.base_url,
+        db_pool: db_pool,
+        hmac_secret: settings.application.hmac_secret,
+    });
+
+    let serve_dir = ServeDir::new("dist");
+
+    let app = Router::new()
+        // .route("/admin/user_requests", get(admin::get_user_requests)) // TODO: add pagination
+        // .route("/admin/user_requests/{id}", get(admin::get_user_request_by_id))
+        // .route("/admin/user_requests/{id}/reject", post(admin::post_accept_user_requests))
+        // .route("/admin/user_requests/{id}/accept", post(admin::post_reject_user_requests))
+        // .route_layer(middleware::from_fn(mw_auth::mw_ctx_require_admin))
+        // .route("/devices", get(device::get)) // TODO: add pagination
+        // .route("/devices", post(device::post))
+        // .route("/devices/{id}", post(device::get_by_id))
+        // .route("/devices/{id}", delete(device::delete_by_id))
+        // .route("/devices/{id}/refresh", get(device::get_refresh_by_id)) // TODO: add rate limiting
+        // .route("/devices/{id}/power_on", post(device::post_power_on_by_id))
+        .route_layer(middleware::from_fn(mw_auth::mw_ctx_require))
+        // .route("/logout", post(logout::post))
+        // .route("/login", post(login::post))
+        // .route("/signup", post(signup::post))
+        .layer(middleware::from_fn_with_state(
+            auth_state.clone(),
+            mw_auth::mw_ctx_resolver,
+        ))
+        // .route("/health_check", get(health_check))
+        .layer(CookieManagerLayer::new())
+        .nest_service("/dist", serve_dir)
+        .with_state(app_state);
+
+    let addr = SocketAddr::new(settings.application.host, settings.application.port);
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    tracing::info!("listening on {}", addr);
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap()
 }

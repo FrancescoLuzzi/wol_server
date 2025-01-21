@@ -51,7 +51,8 @@ impl DatabaseSettings {
     pub fn on_file(&self) -> SqliteConnectOptions {
         SqliteConnectOptions::new()
             .filename(&self.location)
-            .journal_mode(SqliteJournalMode::Wal)
+            .create_if_missing(true)
+            .journal_mode(self.journal_mode)
     }
 }
 
@@ -79,7 +80,6 @@ where
     }
 }
 enum Environment {
-    Local,
     Dev,
     Prod,
 }
@@ -87,7 +87,6 @@ enum Environment {
 impl Environment {
     fn as_str(&self) -> &'static str {
         match self {
-            Self::Local => "local",
             Self::Dev => "dev",
             Self::Prod => "prod",
         }
@@ -99,7 +98,6 @@ impl TryFrom<String> for Environment {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.as_str() {
-            "local" => Ok(Self::Local),
             "dev" => Ok(Self::Dev),
             "prod" => Ok(Self::Prod),
             err_env => Err(format!("no such Environment supported: {err_env}")),
@@ -107,22 +105,16 @@ impl TryFrom<String> for Environment {
     }
 }
 
-pub fn load_settings() -> Result<Settings, ConfigError> {
-    let base_path = std::env::current_dir().expect("Failed to determine the current directory");
-    let configuration_directory = base_path.join("configuration");
-
-    // Detect the running environment.
-    // Default to `local` if unspecified.
+pub fn load_settings(config_path: &PathBuf) -> Result<Settings, ConfigError> {
+    // Detect the running environment, efault to `local` if unspecified.
     let environment: Environment = std::env::var("APP__ENVIRONMENT")
-        .unwrap_or_else(|_| "local".into())
+        .unwrap_or_else(|_| "dev".into())
         .try_into()
         .expect("Failed to parse APP__ENVIRONMENT.");
     let environment_filename = format!("{}.toml", environment.as_str());
     let settings = Config::builder()
-        .add_source(File::from(configuration_directory.join("base.toml")))
-        .add_source(File::from(
-            configuration_directory.join(environment_filename),
-        ))
+        .add_source(File::from(config_path.join("base.toml")))
+        .add_source(File::from(config_path.join(environment_filename)))
         // Add in settings from environment variables (with a prefix of APP and '__' as separator)
         // E.g. `APP__APPLICATION_PORT=5001 would set `Settings.application.port`
         .add_source(

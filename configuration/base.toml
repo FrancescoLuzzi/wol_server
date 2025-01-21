@@ -1,0 +1,6 @@
+[database]
+journal_mode="wal"
+
+[logging]
+enabled=true
+level="info"

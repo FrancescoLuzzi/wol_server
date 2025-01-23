@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `force_password_reset` BOOLEAN NOT NULL DEFAULT 0,
     `request_date` DATE NOT NULL,
     `join_date` DATE NOT NULL,
-    `update_date` DATE NOT NULL
+    `update_date` DATE NOT NULL,
+    `totp_secret` BLOB NULL
 );
 
 CREATE TABLE IF NOT EXISTS `user_rejections`(

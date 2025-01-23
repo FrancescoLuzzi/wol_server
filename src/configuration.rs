@@ -1,5 +1,4 @@
 use config::{Config, ConfigError, File};
-use secrecy::SecretString;
 use serde::Deserialize;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use std::convert::TryFrom;
@@ -20,7 +19,7 @@ pub struct ApplicationSettings {
     pub base_url: String,
     pub host: IpAddr,
     pub port: u16,
-    pub hmac_secret: SecretString,
+    pub hmac_secret: String,
 }
 
 #[derive(serde::Deserialize, Clone)]

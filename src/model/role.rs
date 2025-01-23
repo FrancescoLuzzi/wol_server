@@ -7,6 +7,12 @@ pub enum Role {
     User,
 }
 
+impl Role {
+    pub fn parse_roles(roles: &str) -> Result<Vec<Self>, &'static str> {
+        roles.split("|").map(Role::try_from).collect()
+    }
+}
+
 impl TryFrom<&str> for Role {
     type Error = &'static str;
 

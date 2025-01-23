@@ -11,12 +11,20 @@ use super::error::CtxError;
 pub struct Ctx {
     pub user_id: Uuid,
     pub roles: Vec<Role>,
+    pub valid_totp: Option<bool>,
     pub exp: Duration,
     pub iat: DateTime<Utc>,
 }
 
 // Constructors.
 impl Ctx {
+    pub fn new(user_id: Uuid, roles: Vec<Role>) -> Self {
+        Self {
+            user_id,
+            roles,
+            ..Default::default()
+        }
+    }
     pub fn valid(&self) -> bool {
         !self.user_id.is_nil()
     }
@@ -64,6 +72,7 @@ impl Default for Ctx {
             roles: Vec::new(),
             exp: Duration::from_secs(300),
             iat: Utc::now(),
+            valid_totp: None,
         }
     }
 }

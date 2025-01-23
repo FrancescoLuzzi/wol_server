@@ -10,11 +10,11 @@ use axum::{
 };
 use jsonwebtoken::decode;
 use jsonwebtoken::{DecodingKey, Validation};
-use secrecy::ExposeSecret;
 use tower_cookies::{Cookie, Cookies};
 
 pub type CtxResult = Result<Ctx, CtxExtError>;
-pub const AUTH_COOKIE: &str = "WOL_AUTH_TOKEN";
+
+pub const AUTH_HEADER: &str = "WOL_AUTH_TOKEN";
 pub const REFRESH_COOKIE: &str = "WOL_REFRESh_TOKEN";
 
 pub async fn mw_ctx_require(
@@ -40,7 +40,7 @@ pub async fn mw_ctx_resolver(
 
     let ctx_ext_result = ctx_resolve(state, &cookies).await;
     if ctx_ext_result.is_err() && !matches!(ctx_ext_result, Err(CtxExtError::TokenNotInCookie)) {
-        cookies.remove(Cookie::from(AUTH_COOKIE))
+        cookies.remove(Cookie::from(AUTH_HEADER))
     }
 
     // Store the ctx_ext_result in the request extension
@@ -52,11 +52,11 @@ pub async fn mw_ctx_resolver(
 
 async fn ctx_resolve(state: SharedAuthState, cookies: &Cookies) -> CtxResult {
     let auth_token = cookies
-        .get(AUTH_COOKIE)
+        .get(AUTH_HEADER)
         .ok_or(CtxExtError::TokenNotInCookie)?;
     decode::<Ctx>(
         auth_token.value(),
-        &DecodingKey::from_secret(state.hmac_secret.expose_secret().as_bytes()),
+        &DecodingKey::from_secret(state.hmac_secret.as_bytes()),
         &Validation::default(),
     )
     .map(|x| x.claims)

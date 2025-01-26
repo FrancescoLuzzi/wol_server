@@ -1,4 +1,4 @@
-use axum::response::IntoResponse;
+use axum::{http::StatusCode, response::IntoResponse};
 
 use crate::auth::error::{AuthError, CtxError};
 
@@ -8,6 +8,8 @@ pub enum GenericAuthError {
     GenericCtxError(#[from] CtxError),
     #[error(transparent)]
     GenericAuthError(#[from] AuthError),
+    #[error("Unkwown error")]
+    GenericUnknownError(#[from] anyhow::Error),
 }
 
 impl IntoResponse for GenericAuthError {
@@ -15,6 +17,11 @@ impl IntoResponse for GenericAuthError {
         match self {
             GenericAuthError::GenericCtxError(ctx_error) => ctx_error.into_response(),
             GenericAuthError::GenericAuthError(auth_error) => auth_error.into_response(),
+            GenericAuthError::GenericUnknownError(error) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Unknown error: {}", error.to_string()),
+            )
+                .into_response(),
         }
     }
 }

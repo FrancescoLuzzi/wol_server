@@ -1,7 +1,7 @@
 use axum::{
     self, middleware,
     response::Response,
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use sqlx::sqlite::SqlitePoolOptions;
@@ -12,8 +12,9 @@ use wol_server::{
     app_state::{AppState, AuthState, SharedAppState, SharedAuthState},
     auth::mw_auth,
     configuration::load_settings,
+    controller::app,
+    controller::health_check,
     migration::db_migration,
-    // routes::{health_check, home, index, login, logout, signup, ticket, validate},
     telemetry::{get_subscriber, init_subscriber},
 };
 
@@ -55,14 +56,17 @@ async fn main() {
         // .route("/devices/{id}/refresh", get(device::get_refresh_by_id)) // TODO: add rate limiting
         // .route("/devices/{id}/power_on", post(device::post_power_on_by_id))
         .route_layer(middleware::from_fn(mw_auth::mw_ctx_require))
-        // .route("/logout", post(logout::post))
-        // .route("/login", post(login::post))
-        // .route("/signup", post(signup::post))
+        .route("/auth/logout", post(app::auth::logout::post))
+        .route("/auth/login", post(app::auth::login::post))
+        .route("/auth/signup", post(app::auth::signup::post))
+        .route("/auth/totp", get(app::auth::totp::get))
+        .route("/auth/totp", delete(app::auth::totp::get))
+        .route("/auth/totp", post(app::auth::totp::post))
         .layer(middleware::from_fn_with_state(
             auth_state.clone(),
             mw_auth::mw_ctx_resolver,
         ))
-        // .route("/health_check", get(health_check))
+        .route("/health_check", get(health_check::get))
         .layer(CookieManagerLayer::new())
         .nest_service("/dist", serve_dir)
         .with_state(app_state);

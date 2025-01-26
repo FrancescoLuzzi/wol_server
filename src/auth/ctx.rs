@@ -11,7 +11,7 @@ use super::error::CtxError;
 pub struct Ctx {
     pub user_id: Uuid,
     pub roles: Vec<Role>,
-    pub valid_totp: Option<bool>,
+    pub valid_totp: bool,
     pub exp: Duration,
     pub iat: DateTime<Utc>,
 }
@@ -31,6 +31,11 @@ impl Ctx {
 
     pub fn is_admin(&self) -> bool {
         self.roles.contains(&Role::Admin)
+    }
+
+    pub fn with_valid_totp(&mut self, totp_status: bool) -> &mut Self {
+        self.valid_totp = totp_status;
+        self
     }
 
     pub fn as_refresh(&mut self) -> &mut Self {
@@ -72,7 +77,7 @@ impl Default for Ctx {
             roles: Vec::new(),
             exp: Duration::from_secs(300),
             iat: Utc::now(),
-            valid_totp: None,
+            valid_totp: false,
         }
     }
 }

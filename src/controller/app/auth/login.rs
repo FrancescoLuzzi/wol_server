@@ -12,7 +12,7 @@ use crate::{
 use axum::{
     extract::{Extension, State},
     http::{HeaderMap, StatusCode},
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
     Form,
 };
 use tower_cookies::{Cookie, Cookies};
@@ -31,10 +31,10 @@ pub async fn post(
     tracing::Span::current().record("user_id", &tracing::field::display(&user_ctx.user_id));
     let auth_jwt = user_ctx
         .as_auth()
-        .to_jwt(EncodingKey::from_secret(b"ciccio"))?;
+        .to_jwt(EncodingKey::from_secret(state.hmac_secret.as_bytes()))?;
     let refresh_jwt = user_ctx
         .as_refresh()
-        .to_jwt(EncodingKey::from_secret(b"ciccio"))?;
+        .to_jwt(EncodingKey::from_secret(state.hmac_secret.as_bytes()))?;
     let refresh_cookie = Cookie::build((REFRESH_COOKIE, refresh_jwt))
         .max_age(Duration::days(30))
         .http_only(true)
@@ -42,5 +42,5 @@ pub async fn post(
     cookies.add(refresh_cookie);
     let mut headers = HeaderMap::new();
     headers.append(AUTH_HEADER, auth_jwt.parse().expect("can't parse auth"));
-    Ok((headers, Redirect::to("/auth/totp")).into_response())
+    Ok((headers, StatusCode::OK).into_response())
 }

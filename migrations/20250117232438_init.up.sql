@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS `users` (
     `full_name` TEXT NOT NULL,
     `active` BOOLEAN NOT NULL DEFAULT 0,
     `force_password_reset` BOOLEAN NOT NULL DEFAULT 0,
-    `request_date` DATE NOT NULL,
-    `join_date` DATE NOT NULL,
-    `update_date` DATE NOT NULL,
-    `totp_secret` BLOB NULL
+    `request_date` DATE NOT NULL DEFAULT (datetime('now','localtime')),
+    `join_date` DATE NULL,
+    `update_date` DATE NULL,
+    `totp_secret` BLOB NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS `user_rejections`(
@@ -59,5 +59,5 @@ CREATE TABLE IF NOT EXISTS `user_devices`(
     UNIQUE(`user_id`, `device_id`)
 );
 
-INSERT INTO users(id, roles, username, password, email, full_name, active, force_password_reset, request_date, join_date, update_date)
-VALUES (X'0000000000000001', 'user|admin','admin','admin','admin@admin.com','my admin',1,1,datetime('now','start of day','localtime'), datetime('now','start of day','localtime'), datetime('now','start of day','localtime'));
+INSERT INTO users(id, roles, username, password, email, full_name, active, force_password_reset, request_date, join_date, update_date, totp_secret)
+VALUES (X'550e8400e29b41d4a716446655440000', 'user|admin','admin','admin','admin@admin.com','my admin',1,1,datetime('now','start of day','localtime'), datetime('now','start of day','localtime'), datetime('now','start of day','localtime'), X'155555');

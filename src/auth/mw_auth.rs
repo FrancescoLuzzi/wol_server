@@ -15,7 +15,35 @@ use tower_cookies::{Cookie, Cookies};
 pub type CtxResult = Result<Ctx, CtxExtError>;
 
 pub const AUTH_HEADER: &str = "WOL_AUTH_TOKEN";
-pub const REFRESH_COOKIE: &str = "WOL_REFRESh_TOKEN";
+pub const REFRESH_COOKIE: &str = "WOL_REFRESH_TOKEN";
+
+pub async fn mw_ctx_require_admin(
+    Extension(ctx): Extension<Ctx>,
+    req: Request<Body>,
+    next: Next,
+) -> Result<Response, CtxExtError> {
+    dbg!("{:<12} - mw_ctx_require_admin - {ctx:?}", "MIDDLEWARE");
+
+    if !ctx.is_admin() {
+        return Ok(StatusCode::UNAUTHORIZED.into_response());
+    }
+
+    Ok(next.run(req).await)
+}
+
+pub async fn mw_ctx_require_totp(
+    Extension(ctx): Extension<Ctx>,
+    req: Request<Body>,
+    next: Next,
+) -> Result<Response, CtxExtError> {
+    dbg!("{:<12} - mw_ctx_require_totp - {ctx:?}", "MIDDLEWARE");
+
+    if !ctx.valid_totp {
+        return Ok(StatusCode::FORBIDDEN.into_response());
+    }
+
+    Ok(next.run(req).await)
+}
 
 pub async fn mw_ctx_require(
     Extension(ctx_res): Extension<CtxResult>,

@@ -7,16 +7,16 @@ use uuid::Uuid;
 pub struct User {
     pub id: Uuid,
     roles: String,
-    password: String,
     pub username: String,
+    password: String,
     pub email: String,
     pub full_name: String,
     pub active: bool,
-    pub request_date: NaiveDate,
-    pub join_date: NaiveDate,
-    pub update_date: NaiveDate,
-    pub totp_secret: Option<Vec<u8>>,
     pub force_password_reset: bool,
+    pub request_date: NaiveDate,
+    pub join_date: Option<NaiveDate>,
+    pub update_date: Option<NaiveDate>,
+    pub totp_secret: Vec<u8>,
 }
 
 impl User {

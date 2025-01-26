@@ -2,7 +2,7 @@ set windows-powershell := true
 set dotenv-load
 set dotenv-required
 
-# DATABASE_URL:="sqlite://{{source_dir()}}/sqlite.db"
+DATABASE_URL:="sqlite://"+source_dir()+"/sqlite.db"
 
 default:
     just --list
@@ -10,6 +10,9 @@ default:
 setup-tools:
     @cargo install sqlx-cli --no-default-features --features=sqlite
     @cargo install bacon
+
+setup-env:
+    @echo DATABASE_URL={{DATABASE_URL}} > .env
 
 setup-db:
     @sqlx database create

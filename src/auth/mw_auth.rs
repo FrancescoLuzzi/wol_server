@@ -3,7 +3,7 @@ use crate::app_state::SharedAuthState;
 use axum::{
     body::Body,
     extract::{Request, State},
-    http::StatusCode,
+    http::{HeaderMap, HeaderValue, StatusCode},
     middleware::Next,
     response::{IntoResponse, Response},
     Extension,
@@ -14,7 +14,7 @@ use tower_cookies::{Cookie, Cookies};
 
 pub type CtxResult = Result<Ctx, CtxExtError>;
 
-pub const AUTH_HEADER: &str = "WOL_AUTH_TOKEN";
+pub const AUTH_HEADER: &str = "Authorization";
 pub const REFRESH_COOKIE: &str = "WOL_REFRESH_TOKEN";
 
 pub async fn mw_ctx_require_admin(
@@ -60,15 +60,14 @@ pub async fn mw_ctx_require(
 
 pub async fn mw_ctx_resolver(
     State(state): State<SharedAuthState>,
-    cookies: Cookies,
     mut req: Request<Body>,
     next: Next,
 ) -> Response {
     dbg!("{:<12} - mw_ctx_resolve", "MIDDLEWARE");
 
-    let ctx_ext_result = ctx_resolve(state, &cookies).await;
+    let ctx_ext_result = ctx_resolve(state, req.headers()).await;
     if ctx_ext_result.is_err() && !matches!(ctx_ext_result, Err(CtxExtError::TokenNotInCookie)) {
-        cookies.remove(Cookie::from(AUTH_HEADER))
+        req.headers_mut().remove(AUTH_HEADER);
     }
 
     // Store the ctx_ext_result in the request extension
@@ -78,12 +77,20 @@ pub async fn mw_ctx_resolver(
     next.run(req).await
 }
 
-async fn ctx_resolve(state: SharedAuthState, cookies: &Cookies) -> CtxResult {
-    let auth_token = cookies
+async fn ctx_resolve(state: SharedAuthState, headers: &HeaderMap<HeaderValue>) -> CtxResult {
+    let auth_token = headers
         .get(AUTH_HEADER)
         .ok_or(CtxExtError::TokenNotInCookie)?;
+    let mut token_parts = auth_token
+        .to_str()
+        .map_err(|_| CtxExtError::TokenMalformed)?
+        .split(" ");
+    if token_parts.next() != Some("Bearer") {
+        return Err(CtxExtError::TokenMalformed);
+    }
+
     decode::<Ctx>(
-        auth_token.value(),
+        token_parts.next().ok_or(CtxExtError::TokenMalformed)?,
         &DecodingKey::from_secret(state.hmac_secret.as_bytes()),
         &Validation::default(),
     )

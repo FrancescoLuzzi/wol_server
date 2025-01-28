@@ -25,3 +25,24 @@ impl IntoResponse for GenericAuthError {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct UnknownError(anyhow::Error);
+
+impl IntoResponse for UnknownError {
+    fn into_response(self) -> axum::response::Response {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Unknown error: {}", self.0.to_string()),
+        )
+            .into_response()
+    }
+}
+impl<E> From<E> for UnknownError
+where
+    E: Into<anyhow::Error>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
+    }
+}

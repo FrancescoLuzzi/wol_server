@@ -1,7 +1,6 @@
 use axum::{
     self, middleware,
-    response::Response,
-    routing::{delete, get, post},
+    routing::{get, post},
     Router,
 };
 use sqlx::sqlite::SqlitePoolOptions;
@@ -59,8 +58,7 @@ async fn main() {
         .route("/auth/logout", post(app::auth::logout::post))
         .route("/auth/login", post(app::auth::login::post))
         .route("/auth/signup", post(app::auth::signup::post))
-        .route("/auth/totp", get(app::auth::totp::get))
-        .route("/auth/totp", delete(app::auth::totp::get))
+        .route("/auth/totp", get(app::auth::totp::get_regenerate))
         .route("/auth/totp", post(app::auth::totp::post))
         .layer(middleware::from_fn_with_state(
             auth_state.clone(),

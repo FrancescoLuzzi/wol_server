@@ -30,8 +30,7 @@ pub async fn get_regenerate(
         .begin()
         .await
         .context("can't start transaction")?;
-    let mut rng = rand::thread_rng();
-    let totp_secret = rng.gen::<[u8; 21]>().to_vec();
+    let totp_secret = rand::thread_rng().gen::<[u8; 21]>().to_vec();
     sqlx::query!(
         r#"UPDATE users
     SET totp_secret=$1,

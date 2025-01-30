@@ -7,10 +7,11 @@ edition = "2021"
 anyhow = "1"
 argon2 = { version = "0.5", features = ["std"] }
 axum = { version = "0.8.1", features = ["http2", "macros"] }
+axum-extra = { version = "0.10", features = ["typed-header"] }
 chrono = { version = "0.4", features = ["serde"]}
 config = { version = "0.15", default-features = false, features = ["toml"] }
 jsonwebtoken = "9"
-rand = "0.8"
+rand = "0.8.0"
 serde = "1"
 serde_json = "1"
 sqlx = { version = "0.8.3", features = ["runtime-tokio-rustls", "sqlite", "macros", "postgres", "uuid", "chrono", "migrate"] }
@@ -18,7 +19,7 @@ thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 totp-rs = { version = "5.6.0", features = ["otpauth"] }
 tower-cookies = "0.11"
-tower-http = { version = "0.6", features = ["fs", "trace"] }
+tower-http = { version = "0.6", features = ["fs", "trace", "cors"] }
 tracing = "0.1"
 tracing-bunyan-formatter = "0.3"
 tracing-log = "0.2"

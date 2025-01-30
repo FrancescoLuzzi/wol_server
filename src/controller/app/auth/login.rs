@@ -1,30 +1,30 @@
-use jsonwebtoken::EncodingKey;
-use tower_cookies::cookie::time::Duration;
-
 use crate::{
     app_state::SharedAppState,
     auth::{
-        mw_auth::{CtxResult, AUTH_HEADER, REFRESH_COOKIE},
+        ctx::Ctx,
         password::{validate_credentials, Credentials},
+        AUTH_HEADER, REFRESH_COOKIE,
     },
     controller::error::GenericAuthError,
 };
 use axum::{
-    extract::{Extension, State},
+    extract::State,
     http::{HeaderMap, StatusCode},
     response::{IntoResponse, Response},
     Form,
 };
+use jsonwebtoken::EncodingKey;
+use tower_cookies::cookie::time::Duration;
 use tower_cookies::{Cookie, Cookies};
 
 #[axum::debug_handler]
 pub async fn post(
     State(state): State<SharedAppState>,
-    Extension(ctx_res): Extension<CtxResult>,
+    ctx: Option<Ctx>,
     cookies: Cookies,
     Form(credentials): Form<Credentials>,
 ) -> Result<Response, GenericAuthError> {
-    if ctx_res.is_ok() {
+    if ctx.is_some() {
         return Ok(StatusCode::OK.into_response());
     }
     let mut user_ctx = validate_credentials(credentials, &state.db_pool).await?;

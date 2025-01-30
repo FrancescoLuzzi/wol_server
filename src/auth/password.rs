@@ -1,3 +1,4 @@
+use super::ctx::Ctx;
 use crate::model::role::Role;
 use crate::{auth::error::AuthError, telemetry::spawn_blocking_with_tracing};
 use anyhow::Context;
@@ -6,8 +7,6 @@ use argon2::{PasswordHash, PasswordVerifier};
 use rand;
 use serde::Deserialize;
 use sqlx::SqlitePool;
-
-use super::ctx::Ctx;
 
 #[derive(Debug, Deserialize)]
 pub struct Credentials {

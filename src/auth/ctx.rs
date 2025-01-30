@@ -1,11 +1,20 @@
-use std::time::Duration;
-
+use super::error::{AuthError, CtxError};
+use crate::{
+    app_state::SharedAppState,
+    model::{role::Role, user::User},
+};
+use axum::{
+    extract::{FromRef, FromRequestParts, OptionalFromRequestParts},
+    RequestPartsExt as _,
+};
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
+    TypedHeader,
+};
 use chrono::{DateTime, Utc};
+use jsonwebtoken::DecodingKey;
+use std::time::Duration;
 use uuid::Uuid;
-
-use crate::model::{role::Role, user::User};
-
-use super::error::CtxError;
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct Ctx {
@@ -78,6 +87,52 @@ impl Default for Ctx {
             exp: Duration::from_secs(300),
             iat: Utc::now(),
             valid_totp: false,
+        }
+    }
+}
+
+impl<S> OptionalFromRequestParts<S> for Ctx
+where
+    S: Send + Sync,
+    SharedAppState: FromRef<S>,
+{
+    type Rejection = CtxError;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &S,
+    ) -> Result<Option<Self>, Self::Rejection> {
+        if let Some(TypedHeader(Authorization(bearer))) = parts
+            .extract::<TypedHeader<Authorization<Bearer>>>()
+            .await
+            .ok()
+        {
+            let token = Ctx::from_jwt(
+                bearer.token(),
+                &DecodingKey::from_secret(SharedAppState::from_ref(state).hmac_secret.as_bytes()),
+            )?;
+
+            Ok(Some(token))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+impl<S> FromRequestParts<S> for Ctx
+where
+    S: Send + Sync,
+    SharedAppState: FromRef<S>,
+{
+    type Rejection = AuthError;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        match <Ctx as OptionalFromRequestParts<S>>::from_request_parts(parts, state).await {
+            Ok(res) => res.ok_or(AuthError::MissingCredentials),
+            Err(err) => Err(AuthError::from(err)),
         }
     }
 }

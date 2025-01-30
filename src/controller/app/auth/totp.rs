@@ -1,16 +1,13 @@
 use crate::{
     app_state::SharedAppState,
-    auth::{
-        ctx::Ctx,
-        mw_auth::{AUTH_HEADER, REFRESH_COOKIE},
-    },
+    auth::{ctx::Ctx, AUTH_HEADER, REFRESH_COOKIE},
     controller::error::GenericAuthError,
 };
 use anyhow::Context;
 use axum::{
     extract::State,
     http::HeaderMap,
-    response::{Extension, IntoResponse, Response},
+    response::{IntoResponse, Response},
 };
 use jsonwebtoken::EncodingKey;
 use rand::Rng as _;
@@ -18,11 +15,10 @@ use serde_json::json;
 use tower_cookies::cookie::time::Duration;
 use tower_cookies::{Cookie, Cookies};
 
-// guard this with mw_ctx_require_totp
 pub async fn get_regenerate(
     State(state): State<SharedAppState>,
     cookies: Cookies,
-    Extension(mut ctx): Extension<Ctx>,
+    mut ctx: Ctx,
 ) -> Result<Response, GenericAuthError> {
     let ctx = ctx.as_auth();
     let mut transaction = state
@@ -72,10 +68,9 @@ pub async fn get_regenerate(
     Ok(totp_url.into_response())
 }
 
-// guard this with mw_ctx_require_totp
 pub async fn post(
     State(state): State<SharedAppState>,
-    Extension(mut ctx): Extension<Ctx>,
+    mut ctx: Ctx,
 ) -> Result<Response, GenericAuthError> {
     let ctx = ctx.as_auth();
     let auth_jwt = ctx.to_jwt(EncodingKey::from_secret(state.hmac_secret.as_bytes()))?;

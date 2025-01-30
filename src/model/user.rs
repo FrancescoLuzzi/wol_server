@@ -8,7 +8,6 @@ pub struct User {
     pub id: Uuid,
     roles: String,
     pub username: String,
-    password: String,
     pub email: String,
     pub full_name: String,
     pub active: bool,

@@ -1,15 +1,15 @@
 use axum::{
-    self, middleware,
+    self,
     routing::{get, post},
     Router,
 };
 use sqlx::sqlite::SqlitePoolOptions;
 use std::net::SocketAddr;
 use tower_cookies::CookieManagerLayer;
-use tower_http::services::ServeDir;
+
+use tower_http::{cors, services::ServeDir};
 use wol_server::{
-    app_state::{AppState, AuthState, SharedAppState, SharedAuthState},
-    auth::mw_auth,
+    app_state::{AppState, SharedAppState},
     configuration::load_settings,
     controller::app,
     controller::health_check,
@@ -31,9 +31,6 @@ async fn main() {
     }
     let db_pool = SqlitePoolOptions::new().connect_lazy_with(settings.database.on_file());
     db_migration(&db_pool).await.expect("can't run migrations");
-    let auth_state = SharedAuthState::new(AuthState {
-        hmac_secret: settings.application.hmac_secret.clone(),
-    });
     let app_state = SharedAppState::new(AppState {
         base_url: settings.application.base_url,
         db_pool: db_pool,
@@ -54,18 +51,15 @@ async fn main() {
         // .route("/devices/{id}", delete(device::delete_by_id))
         // .route("/devices/{id}/refresh", get(device::get_refresh_by_id)) // TODO: add rate limiting
         // .route("/devices/{id}/power_on", post(device::post_power_on_by_id))
-        .route_layer(middleware::from_fn(mw_auth::mw_ctx_require))
+        // .route_layer(middleware::from_fn(mw_auth::mw_ctx_require))
         .route("/auth/logout", post(app::auth::logout::post))
         .route("/auth/login", post(app::auth::login::post))
         .route("/auth/signup", post(app::auth::signup::post))
         .route("/auth/totp", get(app::auth::totp::get_regenerate))
         .route("/auth/totp", post(app::auth::totp::post))
-        .layer(middleware::from_fn_with_state(
-            auth_state.clone(),
-            mw_auth::mw_ctx_resolver,
-        ))
         .route("/health_check", get(health_check::get))
         .layer(CookieManagerLayer::new())
+        .layer(cors::CorsLayer::new().allow_origin(cors::Any))
         .nest_service("/dist", serve_dir)
         .with_state(app_state);
 

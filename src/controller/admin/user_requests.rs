@@ -1,8 +1,3 @@
-// .route("/admin/user_requests", get(admin::get_user_requests)) // TODO: add pagination
-// .route("/admin/user_requests/{id}", get(admin::get_user_request_by_id))
-// .route("/admin/user_requests/{id}/reject", post(admin::post_accept_user_requests))
-// .route("/admin/user_requests/{id}/accept", post(admin::post_reject_user_requests))
-
 use crate::{
     app_state::SharedAppState, auth::ctx::Ctx, controller::error::UnknownError,
     model::user_request::UserSignupRequest,
@@ -18,7 +13,7 @@ use uuid::Uuid;
 
 pub async fn get(
     State(state): State<SharedAppState>,
-    Extension(ctx): Extension<Ctx>,
+    ctx: Ctx,
 ) -> Result<Vec<UserSignupRequest>, UnknownError> {
     dbg!("querying user signup requests as {}", ctx.user_id);
     let signups = sqlx::query_as!(
@@ -33,7 +28,7 @@ pub async fn get(
 
 pub async fn get_accept(
     State(state): State<SharedAppState>,
-    Extension(ctx): Extension<Ctx>,
+    ctx: Ctx,
     Path(user_id): Path<Uuid>,
 ) -> Result<StatusCode, UnknownError> {
     dbg!("accepting user signup requests as {}", ctx.user_id);
@@ -75,7 +70,7 @@ struct UserInfos {
 
 pub async fn get_reject(
     State(state): State<SharedAppState>,
-    Extension(ctx): Extension<Ctx>,
+    ctx: Ctx,
     Path(user_id): Path<Uuid>,
 ) -> Result<StatusCode, UnknownError> {
     dbg!("rejecting user signup requests as {}", ctx.user_id);

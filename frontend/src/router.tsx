@@ -1,18 +1,25 @@
 import { createBrowserRouter } from "react-router-dom";
-import { ProtectedRoute } from '@/components/auth';
-import { Root } from '@/components/root';
+import { ProtectedRoute } from "@/components/auth";
+import { Root } from "@/components/root";
 import { RouteError } from "./components/error";
 
 export const router = createBrowserRouter([
   {
-    path: '/auth/login',
+    path: "/auth/login",
     lazy: async () => {
-      const { Login } = await import('./pages/auth/login');
-      return { Component: Login };
-    }
+      const { LoginForm } = await import("./pages/auth/login");
+      return { Component: LoginForm };
+    },
   },
   {
-    path: '/',
+    path: "/auth/signup",
+    lazy: async () => {
+      const { SignupForm } = await import("./pages/auth/signup");
+      return { Component: SignupForm };
+    },
+  },
+  {
+    path: "/",
     element: (
       <ProtectedRoute>
         <Root />
@@ -21,12 +28,12 @@ export const router = createBrowserRouter([
     errorElement: <RouteError />,
     children: [
       {
-        path: '',
+        path: "",
         lazy: async () => {
-          const { Desktop } = await import('./pages/desktop');
-          return { Component: Desktop };
-        }
-      }
-    ]
+          const { Home } = await import("./pages/home");
+          return { Component: Home };
+        },
+      },
+    ],
   },
 ]);

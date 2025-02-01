@@ -12,32 +12,31 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { apiClient } from "@/lib/axios";
-import { setAccessToken } from "@/lib/auth";
+import { useAuth } from "@/context/auth";
+import { useCallback } from "react";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string(),
 });
 
-const loginUser = async (values: z.infer<typeof loginSchema>) => {
-  const { data } = await apiClient.post("/auth/login", values, {
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-  });
-  return data;
-};
-
 export function LoginForm() {
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
+  const { login } = useAuth();
+  const loginUser = useCallback(
+    async (values: z.infer<typeof loginSchema>) => {
+      await login(values.email, values.password);
+    },
+    [login],
+  );
 
   const { mutate, isPending } = useMutation({
     mutationFn: loginUser,
-    onSuccess: (data) => {
-      setAccessToken(data.jwt);
-      // window.location.href = "/";
+    onSuccess: () => {
+      window.location.href = "/";
     },
     onError: (error) => {
       form.setError("root", { message: error.message });

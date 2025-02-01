@@ -15,6 +15,7 @@ type AuthState = {
 };
 
 type AuthActions = {
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
 };
@@ -32,6 +33,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const actions = useMemo<AuthActions>(
     () => ({
+      login: async (email: string, password: string) => {
+        const { status, data } = await apiClient.post(
+          "/auth/login",
+          { email: email, password: password },
+          {
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+          },
+        );
+        const success = status === 200;
+        if (success) {
+          setState({
+            accessToken: data.jwt,
+            ctx: data.ctx,
+            loading: false,
+          });
+        }
+        return success;
+      },
       logout: async () => {
         setState({
           accessToken: null,
@@ -48,8 +67,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data } = await apiClient.get("/auth/refresh");
           setState((prev) => ({
             ...prev,
-            accessToken: data.accessToken,
-            user: data.user,
+            accessToken: data.jwt,
+            ctx: data.ctx,
             loading: false,
           }));
           apiClient.defaults.headers.common["Authorization"] =
@@ -58,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setState((prev) => ({
             ...prev,
             accessToken: null,
-            user: null,
+            ctx: null,
             loading: false,
           }));
         }

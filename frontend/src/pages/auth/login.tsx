@@ -1,69 +1,90 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { apiClient } from "@/lib/axios";
+import { setAccessToken } from "@/lib/auth";
 
-// Define the schema for login
 const loginSchema = z.object({
-  username: z.string().min(1, "Username required"),
-  password: z.string().min(8, "Password must be at least 8 characters long"),
+  email: z.string().email("Invalid email address"),
+  password: z.string(),
 });
 
-type LoginFormInputs = z.output<typeof loginSchema>;
+const loginUser = async (values: z.infer<typeof loginSchema>) => {
+  const { data } = await apiClient.post("/auth/login", values, {
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+  });
+  return data;
+};
 
-export const LoginForm = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<z.input<typeof loginSchema>>({
+export function LoginForm() {
+  const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = (data: LoginFormInputs) => {
-    console.log(data);
-    // Handle login logic here
-  };
+  const { mutate, isPending } = useMutation({
+    mutationFn: loginUser,
+    onSuccess: (data) => {
+      setAccessToken(data.jwt);
+      // window.location.href = "/";
+    },
+    onError: (error) => {
+      form.setError("root", { message: error.message });
+    },
+  });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Login</CardTitle>
-        <CardDescription>Welcome back</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" type="text" {...register("username")} />
-              {errors.username && (
-                <p className="text-red-500">{errors.username.message}</p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-red-500">{errors.password.message}</p>
-              )}
-            </div>
-          </div>
-          <CardFooter className="mt-4">
-            <Button type="submit">Login</Button>
-          </CardFooter>
-        </form>
-      </CardContent>
-    </Card>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit((values) => mutate(values))}
+        className="space-y-6"
+      >
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input placeholder="Email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="Password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {form.formState.errors.root && (
+          <p className="text-sm font-medium text-destructive">
+            {form.formState.errors.root.message}
+          </p>
+        )}
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? "Logging in..." : "Login"}
+        </Button>
+      </form>
+    </Form>
   );
-};
+}

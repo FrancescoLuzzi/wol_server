@@ -60,4 +60,4 @@ CREATE TABLE IF NOT EXISTS `user_devices`(
 );
 
 INSERT INTO users(id, roles, username, password, email, full_name, active, force_password_reset, request_date, join_date, update_date, totp_secret)
-VALUES (X'550e8400e29b41d4a716446655440000', 'user|admin','admin','admin','admin@admin.com','my admin',1,1,datetime('now','start of day','localtime'), datetime('now','start of day','localtime'), datetime('now','start of day','localtime'), X'155555');
+VALUES (X'550e8400e29b41d4a716446655440000', 'user|admin','admin','$argon2id$v=19$m=15000,t=2,p=1$OXh6dTJTOHJSVnJWZEZSUw$Gbm36MmV+3adnEAo+j8OMQ','admin@admin.com','my admin',1,1,datetime('now','start of day','localtime'), datetime('now','start of day','localtime'), datetime('now','start of day','localtime'), X'155555');

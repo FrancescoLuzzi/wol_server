@@ -1,14 +1,9 @@
-import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { ReactNode } from "react";
 
-import { existToken } from '@/lib/cookie.ts';
+import { useAuth } from "@/context/auth";
 
 export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-  const hasToken = existToken();
-
-  if (!hasToken) {
-    return <Navigate to={'/auth/login'} replace />;
-  }
-
-  return children;
+  const { accessToken } = useAuth();
+  console.log(accessToken);
+  return accessToken ? children : <div>Oops</div>;
 };

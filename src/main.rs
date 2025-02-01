@@ -34,7 +34,7 @@ async fn main() {
     db_migration(&db_pool).await.expect("can't run migrations");
     let app_state = SharedAppState::new(AppState {
         base_url: settings.application.base_url,
-        db_pool: db_pool,
+        db_pool,
         hmac_secret: settings.application.hmac_secret,
     });
 

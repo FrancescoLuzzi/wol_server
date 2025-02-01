@@ -3,7 +3,7 @@ use serde::Deserialize;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode};
 use std::convert::TryFrom;
 use std::net::IpAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing_log::log::Level;
 
@@ -104,7 +104,7 @@ impl TryFrom<String> for Environment {
     }
 }
 
-pub fn load_settings(config_path: &PathBuf) -> Result<Settings, ConfigError> {
+pub fn load_settings(config_path: &Path) -> Result<Settings, ConfigError> {
     // Detect the running environment, efault to `local` if unspecified.
     let environment: Environment = std::env::var("APP__ENVIRONMENT")
         .unwrap_or_else(|_| "dev".into())

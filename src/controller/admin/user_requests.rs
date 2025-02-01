@@ -6,16 +6,16 @@ use anyhow::Context;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    Extension,
 };
 use chrono::NaiveDateTime;
 use uuid::Uuid;
 
+#[tracing::instrument(name = "users_signup_requests", skip_all)]
 pub async fn get(
     State(state): State<SharedAppState>,
     ctx: Ctx,
 ) -> Result<Vec<UserSignupRequest>, UnknownError> {
-    dbg!("querying user signup requests as {}", ctx.user_id);
+    tracing::info!("{}", ctx.user_id);
     let signups = sqlx::query_as!(
         UserSignupRequest,
         r#"SELECT user_id as "user_id: Uuid",request_text from users_signup_requests"#
@@ -26,12 +26,13 @@ pub async fn get(
     Ok(signups)
 }
 
+#[tracing::instrument(name = "request_accept", skip_all)]
 pub async fn get_accept(
     State(state): State<SharedAppState>,
     ctx: Ctx,
     Path(user_id): Path<Uuid>,
 ) -> Result<StatusCode, UnknownError> {
-    dbg!("accepting user signup requests as {}", ctx.user_id);
+    tracing::info!("{}", ctx.user_id);
     let mut transaction = state
         .db_pool
         .begin()
@@ -68,12 +69,13 @@ struct UserInfos {
     request_date: NaiveDateTime,
 }
 
+#[tracing::instrument(name = "request_reject", skip_all)]
 pub async fn get_reject(
     State(state): State<SharedAppState>,
     ctx: Ctx,
     Path(user_id): Path<Uuid>,
 ) -> Result<StatusCode, UnknownError> {
-    dbg!("rejecting user signup requests as {}", ctx.user_id);
+    tracing::info!("{}", ctx.user_id);
     let mut transaction = state
         .db_pool
         .begin()

@@ -15,6 +15,7 @@ pub struct UserSignup {
     request_text: String,
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn post(
     State(state): State<SharedAppState>,
     Form(signup): Form<UserSignup>,

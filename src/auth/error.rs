@@ -32,7 +32,7 @@ impl IntoResponse for AuthError {
 pub enum CtxError {
     #[error("Can't decode credentials from jwt: {0}")]
     JwtDecodeError(#[source] jsonwebtoken::errors::Error),
-    #[error("Can't decode credentials from jwt: {0}")]
+    #[error("Can't encode credentials into jwt: {0}")]
     JwtEncodeError(#[source] jsonwebtoken::errors::Error),
 }
 

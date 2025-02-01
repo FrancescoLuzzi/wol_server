@@ -11,18 +11,17 @@ use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use jsonwebtoken::DecodingKey;
-use std::time::Duration;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct Ctx {
     pub user_id: Uuid,
-    pub roles: Vec<Role>,
     pub valid_totp: bool,
-    pub exp: Duration,
-    pub iat: DateTime<Utc>,
+    pub exp: i64,
+    pub roles: Vec<Role>,
+    pub iat: i64,
 }
 
 // Constructors.
@@ -49,15 +48,15 @@ impl Ctx {
 
     pub fn as_refresh(&mut self) -> &mut Self {
         // 30 days
-        self.exp = Duration::from_secs(60 * 60 * 24 * 30);
-        self.iat = Utc::now();
+        self.exp = (Utc::now() + chrono::Duration::days(30)).timestamp();
+        self.iat = Utc::now().timestamp();
         self
     }
 
     pub fn as_auth(&mut self) -> &mut Self {
-        // 2 hours
-        self.exp = Duration::from_secs(60 * 60 * 2);
-        self.iat = Utc::now();
+        // 1 hours
+        self.exp = (Utc::now() + chrono::Duration::hours(1)).timestamp();
+        self.iat = Utc::now().timestamp();
         self
     }
 
@@ -68,14 +67,14 @@ impl Ctx {
     }
 
     pub fn from_jwt(token: &str, key: &jsonwebtoken::DecodingKey) -> Result<Self, CtxError> {
-        jsonwebtoken::decode::<Self>(token, key, &jsonwebtoken::Validation::default())
-            .map_err(|err| CtxError::JwtDecodeError(err))
+        jsonwebtoken::decode::<Ctx>(token, key, &jsonwebtoken::Validation::default())
+            .map_err(CtxError::JwtDecodeError)
             .map(|data| data.claims)
     }
 
     pub fn to_jwt(&self, key: jsonwebtoken::EncodingKey) -> Result<String, CtxError> {
         jsonwebtoken::encode(&jsonwebtoken::Header::default(), self, &key)
-            .map_err(|err| CtxError::JwtEncodeError(err))
+            .map_err(CtxError::JwtEncodeError)
     }
 }
 
@@ -84,8 +83,8 @@ impl Default for Ctx {
         Self {
             user_id: Uuid::nil(),
             roles: Vec::new(),
-            exp: Duration::from_secs(300),
-            iat: Utc::now(),
+            exp: 0,
+            iat: 0,
             valid_totp: false,
         }
     }
@@ -102,10 +101,8 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Option<Self>, Self::Rejection> {
-        if let Some(TypedHeader(Authorization(bearer))) = parts
-            .extract::<TypedHeader<Authorization<Bearer>>>()
-            .await
-            .ok()
+        if let Ok(TypedHeader(Authorization(bearer))) =
+            parts.extract::<TypedHeader<Authorization<Bearer>>>().await
         {
             let token = Ctx::from_jwt(
                 bearer.token(),

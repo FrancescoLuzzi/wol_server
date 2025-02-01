@@ -15,6 +15,7 @@ use serde_json::json;
 use tower_cookies::cookie::time::Duration;
 use tower_cookies::{Cookie, Cookies};
 
+#[tracing::instrument(skip_all)]
 pub async fn get_regenerate(
     State(state): State<SharedAppState>,
     cookies: Cookies,
@@ -48,6 +49,7 @@ pub async fn get_regenerate(
     let refresh_cookie = Cookie::build((REFRESH_COOKIE, refresh_jwt))
         .max_age(Duration::days(30))
         .http_only(true)
+        .path("/")
         .build();
     cookies.add(refresh_cookie);
     let totp_url = totp_rs::TOTP::new(
@@ -68,6 +70,7 @@ pub async fn get_regenerate(
     Ok(totp_url.into_response())
 }
 
+#[tracing::instrument(skip_all)]
 pub async fn post(
     State(state): State<SharedAppState>,
     mut ctx: Ctx,

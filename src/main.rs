@@ -1,5 +1,6 @@
 use axum::{
     self,
+    http::{self, header, HeaderValue},
     routing::{get, post},
     Router,
 };
@@ -55,11 +56,18 @@ async fn main() {
         .route("/auth/logout", post(app::auth::logout::post))
         .route("/auth/login", post(app::auth::login::post))
         .route("/auth/signup", post(app::auth::signup::post))
+        .route("/auth/refresh", get(app::auth::refresh::get))
         .route("/auth/totp", get(app::auth::totp::get_regenerate))
         .route("/auth/totp", post(app::auth::totp::post))
         .route("/health_check", get(health_check::get))
         .layer(CookieManagerLayer::new())
-        .layer(cors::CorsLayer::new().allow_origin(cors::Any))
+        .layer(
+            cors::CorsLayer::new()
+                .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
+                .allow_methods([http::Method::GET, http::Method::POST, http::Method::OPTIONS])
+                .allow_credentials(true)
+                .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE]),
+        )
         .nest_service("/dist", serve_dir)
         .with_state(app_state);
 

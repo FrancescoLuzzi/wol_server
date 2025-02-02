@@ -19,7 +19,7 @@ impl IntoResponse for GenericAuthError {
             GenericAuthError::GenericAuthError(auth_error) => auth_error.into_response(),
             GenericAuthError::GenericUnknownError(error) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Unknown error: {}", error.to_string()),
+                format!("Unknown error: {}", error),
             )
                 .into_response(),
         }
@@ -33,7 +33,7 @@ impl IntoResponse for UnknownError {
     fn into_response(self) -> axum::response::Response {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Unknown error: {}", self.0.to_string()),
+            format!("Unknown error: {}", self.0),
         )
             .into_response()
     }

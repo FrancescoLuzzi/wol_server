@@ -40,7 +40,7 @@ impl IntoResponse for CtxError {
     fn into_response(self) -> axum::response::Response {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("error with jwt: {}", self.to_string()),
+            format!("error with jwt: {}", self),
         )
             .into_response()
     }

@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/lib/axios";
 import { UUID } from "crypto";
 
+// TODO: integrate an axios client like in @/lib/axios
+
 type AuthState = {
   accessToken: string | null;
   ctx: {
@@ -57,9 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ctx: null,
           loading: false,
         });
-        await apiClient.get("/auth/logout");
-        apiClient.defaults.headers.common["Authorization"] = "";
-        window.location.href = "/auth/login";
+        await apiClient.post("/auth/logout");
       },
 
       refreshToken: async () => {
@@ -71,8 +71,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ctx: data.ctx,
             loading: false,
           }));
-          apiClient.defaults.headers.common["Authorization"] =
-            `Bearer ${data.accessToken}`;
         } catch (error) {
           setState((prev) => ({
             ...prev,

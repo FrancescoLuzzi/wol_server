@@ -1,5 +1,7 @@
 import axios from "axios";
 import { getAccessToken, setAccessToken, clearAccessToken } from "./auth";
+// TODO: integrate all this stuff into the auth context manager
+// Drop @/lib/auth.ts library
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,

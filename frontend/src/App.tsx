@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/context/theme";
 
 function App() {
   return (
-    <main className="h-screen w-screen bg-background">
+    <main className="flex h-screen w-screen flex-col bg-background">
       <ThemeProvider>
         <RouterProvider router={router} />
       </ThemeProvider>

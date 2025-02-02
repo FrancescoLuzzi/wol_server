@@ -3,9 +3,8 @@ import { useAuth } from "@/context/auth";
 import {
   NavigationMenu,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
-  navigationMenuTriggerStyle,
+  NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import {
   DropdownMenu,
@@ -15,15 +14,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 //import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function NavigationHeader() {
   const { ctx, logout } = useAuth();
 
   return (
-    <header className="flex items-center justify-between border-b px-6 py-4">
+    <nav className="flex items-center justify-between border-b px-6 py-4">
       <Link to="/" className="flex items-center gap-2">
-        <svg /* Your logo SVG */ />
         <span className="text-lg font-semibold">Your Brand</span>
       </Link>
 
@@ -32,14 +30,10 @@ export function NavigationHeader() {
           {!ctx ? (
             <>
               <NavigationMenuItem>
-                <Link to="/signup">
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Sign Up
-                  </NavigationMenuLink>
-                </Link>
+                <Link to="/auth/signup">Sign Up</Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link to="/login">
+                <Link to="/auth/login">
                   <Button variant="outline">Login</Button>
                 </Link>
               </NavigationMenuItem>
@@ -53,11 +47,11 @@ export function NavigationHeader() {
                     className="h-10 w-10 rounded-full p-0"
                   >
                     <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        {ctx.roles[0][0]?.toUpperCase() || "U"}
+                      </AvatarFallback>
                       {
                         //<AvatarImage src={ctx.avatarUrl} />
-                        //<AvatarFallback>
-                        //  {ctx.email?.[0]?.toUpperCase() || "U"}
-                        //</AvatarFallback>
                       }
                     </Avatar>
                   </Button>
@@ -80,6 +74,6 @@ export function NavigationHeader() {
           )}
         </NavigationMenuList>
       </NavigationMenu>
-    </header>
+    </nav>
   );
 }

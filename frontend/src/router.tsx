@@ -6,7 +6,7 @@ import { NavigationHeader } from "./components/heading";
 
 export const router = createBrowserRouter([
   {
-    path: "/",
+    path: "/auth",
     element: (
       <>
         <NavigationHeader />
@@ -15,21 +15,21 @@ export const router = createBrowserRouter([
     ),
     children: [
       {
-        path: "/auth/totp",
+        path: "totp",
         lazy: async () => {
           const { TotpForm } = await import("./pages/auth/totp");
           return { Component: TotpForm };
         },
       },
       {
-        path: "/auth/login",
+        path: "login",
         lazy: async () => {
           const { LoginForm } = await import("./pages/auth/login");
           return { Component: LoginForm };
         },
       },
       {
-        path: "/auth/signup",
+        path: "signup",
         lazy: async () => {
           const { SignupForm } = await import("./pages/auth/signup");
           return { Component: SignupForm };

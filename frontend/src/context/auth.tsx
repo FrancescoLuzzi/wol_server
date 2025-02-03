@@ -1,8 +1,15 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { apiClient } from "@/lib/axios";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useCallback,
+  useLayoutEffect,
+} from "react";
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { UUID } from "crypto";
-
-// TODO: integrate an axios client like in @/lib/axios
 
 type AuthState = {
   accessToken: string | null;
@@ -13,16 +20,17 @@ type AuthState = {
     exp: number;
     valid_totp: boolean;
   } | null;
-  loading: boolean;
 };
 
 type AuthActions = {
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  refreshToken: () => Promise<void>;
 };
 
-type AuthContextValue = AuthState & AuthActions;
+type AuthContextValue = AuthState &
+  AuthActions & {
+    apiClient: AxiosInstance;
+  };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -30,110 +38,137 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     accessToken: null,
     ctx: null,
-    loading: true,
   });
 
-  const actions = useMemo<AuthActions>(
-    () => ({
-      login: async (email: string, password: string) => {
-        const { status, data } = await apiClient.post(
-          "/auth/login",
-          { email: email, password: password },
-          {
-            headers: { "content-type": "application/x-www-form-urlencoded" },
-          },
-        );
-        const success = status === 200;
-        if (success) {
-          setState({
-            accessToken: data.jwt,
-            ctx: data.ctx,
-            loading: false,
-          });
-        }
-        return success;
-      },
-      logout: async () => {
-        setState({
-          accessToken: null,
-          ctx: null,
-          loading: false,
-        });
-        await apiClient.post("/auth/logout");
-      },
+  const accessTokenRef = useRef(state.accessToken);
+  useEffect(() => {
+    accessTokenRef.current = state.accessToken;
+  }, [state.accessToken]);
 
-      refreshToken: async () => {
-        try {
-          const { data } = await apiClient.get("/auth/refresh");
-          setState((prev) => ({
-            ...prev,
-            accessToken: data.jwt,
-            ctx: data.ctx,
-            loading: false,
-          }));
-        } catch (error) {
-          setState((prev) => ({
-            ...prev,
-            accessToken: null,
-            ctx: null,
-            loading: false,
-          }));
-        }
-      },
-    }),
+  // Create base API client without auth interceptors
+  const baseApiClient = useMemo(
+    () =>
+      axios.create({
+        baseURL: import.meta.env.VITE_API_URL,
+        withCredentials: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }),
     [],
   );
 
-  // Immediate refresh check on mount
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    try {
+      const { data } = await baseApiClient.get("/auth/refresh");
+      setState((prev) => ({
+        ...prev,
+        accessToken: data.jwt,
+        ctx: data.ctx,
+      }));
+      return true;
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        accessToken: null,
+        ctx: null,
+      }));
+      return false;
+    }
+  }, [baseApiClient]);
+
+  const refreshTokenRef = useRef(refreshToken);
   useEffect(() => {
-    let mounted = true;
+    refreshTokenRef.current = refreshToken;
+  }, [refreshToken]);
 
-    const initializeAuth = async () => {
-      try {
-        await actions.refreshToken();
-      } finally {
-        if (mounted) {
-          setState((prev) => ({ ...prev, loading: false }));
-        }
+  // Create authenticated API client with interceptors
+  const authApiClient = useMemo(() => {
+    const client = axios.create({
+      baseURL: import.meta.env.VITE_API_URL,
+      withCredentials: true,
+    });
+
+    client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+      if (accessTokenRef.current) {
+        config.headers.Authorization = `Bearer ${accessTokenRef.current}`;
       }
-    };
+      return config;
+    });
 
-    initializeAuth();
+    client.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
 
-    return () => {
-      mounted = false;
-    };
-  }, [actions]);
+          const refreshSuccess = await refreshTokenRef.current();
+          if (!refreshSuccess) {
+            await logout();
+            return Promise.reject(error);
+          }
+
+          originalRequest.headers.Authorization = `Bearer ${accessTokenRef.current}`;
+          return client(originalRequest);
+        }
+        return Promise.reject(error);
+      },
+    );
+
+    return client;
+  }, []);
+
+  const logout = useCallback(async () => {
+    setState({
+      accessToken: null,
+      ctx: null,
+    });
+    await baseApiClient.post("/auth/logout");
+  }, [baseApiClient]);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      try {
+        const { data } = await baseApiClient.post(
+          "/auth/login",
+          { email, password },
+          { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+        );
+
+        setState({
+          accessToken: data.jwt,
+          ctx: data.ctx,
+        });
+      } catch (error) {
+        throw error;
+      }
+    },
+    [baseApiClient],
+  );
+
+  // Initial token check
+  useLayoutEffect(() => {
+    refreshToken();
+  }, [refreshToken]);
 
   const value = useMemo(
     () => ({
       ...state,
-      ...actions,
+      login,
+      logout,
+      apiClient: authApiClient,
     }),
-    [state, actions],
+    [state, login, logout, authApiClient],
   );
 
-  return (
-    <AuthContext.Provider value={value}>
-      {state.loading ? (
-        <div className="flex h-screen items-center justify-center">
-          <span>Loading...</span>
-        </div>
-      ) : (
-        children
-      )}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
-
-  // Explicit error for missing provider
-  if (typeof context === "undefined" || context == null) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
-
-  // Now TypeScript knows context is AuthContextValue
   return context;
 }

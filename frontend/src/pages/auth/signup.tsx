@@ -13,8 +13,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { apiClient } from "@/lib/axios";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/auth";
 
 const passwordRequirements = {
   minLength: 8,
@@ -81,6 +81,7 @@ export function SignupForm() {
       request_text: "",
     },
   });
+  const { apiClient } = useAuth();
 
   const [passwordChecks, setPasswordChecks] = useState({
     minLength: false,

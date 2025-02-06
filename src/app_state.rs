@@ -7,4 +7,5 @@ pub struct AppState {
     pub db_pool: SqlitePool,
     pub hmac_secret: String,
     pub base_url: String,
+    pub app_name: String,
 }

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import { useAuth } from "@/context/auth";
+import { useAuth } from "@/hooks/auth";
 import { Navigate } from "react-router-dom";
 
 export const ProtectedRoute = ({ children }: { children: ReactNode }) => {

@@ -15,6 +15,11 @@ CREATE TABLE IF NOT EXISTS `users` (
     `totp_secret` BLOB NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS `totp_request`(
+    `user_id` BLOB PRIMARY KEY NOT NULL,
+    `totp_secret` BLOB NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS `user_rejections`(
     `username` TEXT NOT NULL,
     `email` TEXT NOT NULL,

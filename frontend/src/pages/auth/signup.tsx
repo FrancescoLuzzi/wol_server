@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/context/auth";
+import { useAuth } from "@/hooks/auth";
 
 const passwordRequirements = {
   minLength: 8,

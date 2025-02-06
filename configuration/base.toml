@@ -1,3 +1,6 @@
+[application]
+app_name="wol_server"
+
 [database]
 journal_mode="wal"
 

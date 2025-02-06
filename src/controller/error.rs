@@ -19,7 +19,7 @@ impl IntoResponse for GenericAuthError {
             GenericAuthError::GenericAuthError(auth_error) => auth_error.into_response(),
             GenericAuthError::GenericUnknownError(error) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Unknown error: {}", error),
+                format!("Unknown error: {}", error.source().unwrap()),
             )
                 .into_response(),
         }

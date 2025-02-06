@@ -1,6 +1,5 @@
 import {
   createContext,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -11,18 +10,17 @@ import {
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { UUID } from "crypto";
 
-type AuthState = {
+export type AuthState = {
   accessToken: string | null;
   ctx: {
     user_id: UUID;
     roles: string[];
     iac: number;
     exp: number;
-    valid_totp: boolean;
   } | null;
 };
 
-type AuthActions = {
+export type AuthActions = {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -32,7 +30,7 @@ type AuthContextValue = AuthState &
     apiClient: AxiosInstance;
   };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -163,12 +161,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 }

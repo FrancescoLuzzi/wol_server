@@ -20,6 +20,7 @@ pub struct ApplicationSettings {
     pub host: IpAddr,
     pub port: u16,
     pub hmac_secret: String,
+    pub app_name: String,
 }
 
 #[derive(serde::Deserialize, Clone)]

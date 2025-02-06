@@ -36,6 +36,7 @@ async fn main() {
         base_url: settings.application.base_url,
         db_pool,
         hmac_secret: settings.application.hmac_secret,
+        app_name: settings.application.app_name,
     });
 
     let serve_dir = ServeDir::new("dist");
@@ -57,7 +58,11 @@ async fn main() {
         .route("/auth/login", post(app::auth::login::post))
         .route("/auth/signup", post(app::auth::signup::post))
         .route("/auth/refresh", get(app::auth::refresh::get))
-        .route("/auth/totp", get(app::auth::totp::get_regenerate))
+        .route(
+            "/auth/totp/regenerate",
+            get(app::auth::totp::get_regenerate),
+        )
+        .route("/auth/totp/validate", post(app::auth::totp::post_validate))
         .route("/auth/totp", post(app::auth::totp::post))
         .route("/health_check", get(health_check::get))
         .layer(CookieManagerLayer::new())

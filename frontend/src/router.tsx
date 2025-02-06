@@ -15,9 +15,16 @@ export const router = createBrowserRouter([
     ),
     children: [
       {
-        path: "totp",
+        path: "totp/validate",
         lazy: async () => {
-          const { TotpForm } = await import("./pages/auth/totp");
+          const { TotpForm } = await import("./pages/auth/totp-validate");
+          return { Component: TotpForm };
+        },
+      },
+      {
+        path: "totp/login",
+        lazy: async () => {
+          const { TotpForm } = await import("./pages/auth/totp-login");
           return { Component: TotpForm };
         },
       },

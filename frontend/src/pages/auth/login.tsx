@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/auth";
+import { useAuth } from "@/hooks/auth";
 import { useCallback } from "react";
 
 const loginSchema = z.object({
@@ -36,7 +36,7 @@ export function LoginForm() {
   const { mutate, isPending } = useMutation({
     mutationFn: loginUser,
     onSuccess: () => {
-      window.location.href = "/";
+      window.location.href = "/auth/totp/login";
     },
     onError: (error) => {
       form.setError("root", { message: error.message });

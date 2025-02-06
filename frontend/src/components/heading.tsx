@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "@/context/auth";
+import { useAuth } from "@/hooks/auth";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 //import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ThemeToggle } from "./theme";
 
 export function NavigationHeader() {
   const { ctx, logout } = useAuth();
@@ -74,6 +75,7 @@ export function NavigationHeader() {
           )}
         </NavigationMenuList>
       </NavigationMenu>
+      <ThemeToggle />
     </nav>
   );
 }

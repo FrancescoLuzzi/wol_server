@@ -20,8 +20,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { useAuth } from "@/hooks/auth";
-import { useCallback, useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { useCallback } from "react";
 import { LoaderCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 
@@ -30,11 +29,6 @@ const FormSchema = z.object({
     message: "Your one-time password must be 6 characters.",
   }),
 });
-
-interface TotpInfos {
-  url: string;
-  secret: string;
-}
 
 export function TotpForm() {
   const { apiClient } = useAuth();

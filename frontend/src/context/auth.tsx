@@ -3,21 +3,26 @@ import {
   useEffect,
   useMemo,
   useState,
+  Dispatch,
   useRef,
   useCallback,
   useLayoutEffect,
+  SetStateAction,
 } from "react";
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { UUID } from "crypto";
+import { getBaseUrl } from "@/lib/service";
+
+export interface AuthCtx {
+  user_id: UUID;
+  roles: string[];
+  iac: number;
+  exp: number;
+}
 
 export type AuthState = {
   accessToken: string | null;
-  ctx: {
-    user_id: UUID;
-    roles: string[];
-    iac: number;
-    exp: number;
-  } | null;
+  ctx: AuthCtx | null;
 };
 
 export type AuthActions = {
@@ -32,6 +37,28 @@ type AuthContextValue = AuthState &
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
+const refreshToken = async (
+  client: AxiosInstance,
+  setState: Dispatch<SetStateAction<AuthState>>,
+): Promise<boolean> => {
+  try {
+    const { data } = await client.get("/auth/refresh");
+    setState((prev) => ({
+      ...prev,
+      accessToken: data.jwt,
+      ctx: data.ctx,
+    }));
+    return true;
+  } catch (error) {
+    setState((prev) => ({
+      ...prev,
+      accessToken: null,
+      ctx: null,
+    }));
+    return false;
+  }
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     accessToken: null,
@@ -43,47 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     accessTokenRef.current = state.accessToken;
   }, [state.accessToken]);
 
-  // Create base API client without auth interceptors
-  const baseApiClient = useMemo(
-    () =>
-      axios.create({
-        baseURL: import.meta.env.VITE_API_URL,
-        withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }),
-    [],
-  );
-
-  const refreshToken = useCallback(async (): Promise<boolean> => {
-    try {
-      const { data } = await baseApiClient.get("/auth/refresh");
-      setState((prev) => ({
-        ...prev,
-        accessToken: data.jwt,
-        ctx: data.ctx,
-      }));
-      return true;
-    } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        accessToken: null,
-        ctx: null,
-      }));
-      return false;
-    }
-  }, [baseApiClient]);
-
-  const refreshTokenRef = useRef(refreshToken);
-  useEffect(() => {
-    refreshTokenRef.current = refreshToken;
-  }, [refreshToken]);
-
   // Create authenticated API client with interceptors
   const authApiClient = useMemo(() => {
     const client = axios.create({
-      baseURL: import.meta.env.VITE_API_URL,
+      baseURL: getBaseUrl("http"),
       withCredentials: true,
     });
 
@@ -101,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
-          const refreshSuccess = await refreshTokenRef.current();
+          const refreshSuccess = await refreshToken(client, setState);
           if (!refreshSuccess) {
             await logout();
             return Promise.reject(error);
@@ -122,13 +112,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       accessToken: null,
       ctx: null,
     });
-    await baseApiClient.post("/auth/logout");
-  }, [baseApiClient]);
+    await authApiClient.post("/auth/logout");
+  }, [authApiClient]);
 
   const login = useCallback(
     async (email: string, password: string) => {
       try {
-        const { data } = await baseApiClient.post(
+        const { data } = await authApiClient.post(
           "/auth/login",
           { email, password },
           { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
@@ -142,12 +132,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     },
-    [baseApiClient],
+    [authApiClient],
   );
 
   // Initial token check
   useLayoutEffect(() => {
-    refreshToken();
+    refreshToken(authApiClient, setState);
   }, [refreshToken]);
 
   const value = useMemo(

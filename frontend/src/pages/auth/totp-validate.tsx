@@ -48,7 +48,7 @@ export function TotpForm() {
 
   useEffect(() => {
     async function fetchTotpUrl() {
-      const { data } = await apiClient.get("/auth/totp/regenerate");
+      const { data } = await apiClient.get("/api/auth/totp/regenerate");
       setTotpInfos(data);
     }
 
@@ -57,7 +57,7 @@ export function TotpForm() {
 
   const validateTotp = useCallback(
     async (values: z.infer<typeof FormSchema>) => {
-      await apiClient.post("/auth/totp/validate", values);
+      await apiClient.post("/api/auth/totp/validate", values);
     },
     [apiClient],
   );

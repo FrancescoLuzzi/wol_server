@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/auth";
 import { useCallback } from "react";
+import { RedirectIfLoggedIn } from "@/components/auth";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -44,46 +45,48 @@ export function LoginForm() {
   });
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit((values) => mutate(values))}
-        className="space-y-6"
-      >
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="Email" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+    <RedirectIfLoggedIn>
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit((values) => mutate(values))}
+          className="space-y-6"
+        >
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input placeholder="Email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="Password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {form.formState.errors.root && (
+            <p className="text-sm font-medium text-destructive">
+              {form.formState.errors.root.message}
+            </p>
           )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="Password" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        {form.formState.errors.root && (
-          <p className="text-sm font-medium text-destructive">
-            {form.formState.errors.root.message}
-          </p>
-        )}
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Logging in..." : "Login"}
-        </Button>
-      </form>
-    </Form>
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? "Logging in..." : "Login"}
+          </Button>
+        </form>
+      </Form>
+    </RedirectIfLoggedIn>
   );
 }

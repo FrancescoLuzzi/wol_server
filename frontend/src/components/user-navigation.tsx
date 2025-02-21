@@ -31,7 +31,7 @@ export const UserNavigation = ({ ctx, logout }: NavigationProps) => {
               <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback>
-                    {ctx.roles[0][0]?.toUpperCase() || "U"}
+                    {ctx.roles.sort()[0][0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                   {
                     //<AvatarImage src={ctx.avatarUrl} />

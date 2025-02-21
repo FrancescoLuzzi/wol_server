@@ -3,15 +3,17 @@ use chrono::NaiveDate;
 use sqlx::prelude::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug, serde::Deserialize, FromRow)]
+#[derive(serde::Deserialize, FromRow)]
 pub struct User {
     pub id: Uuid,
     roles: String,
+    pub password: String,
     pub username: String,
     pub email: String,
     pub full_name: String,
     pub active: bool,
     pub force_password_reset: bool,
+    pub onboarding_done: bool,
     pub request_date: NaiveDate,
     pub join_date: Option<NaiveDate>,
     pub update_date: Option<NaiveDate>,

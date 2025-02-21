@@ -3,13 +3,13 @@ use crate::{
     auth::{
         ctx::Ctx,
         password::{validate_credentials, Credentials},
-        AUTH_HEADER, REFRESH_COOKIE,
+        REFRESH_COOKIE,
     },
     controller::error::GenericAuthError,
 };
 use axum::{
     extract::State,
-    http::{HeaderMap, StatusCode},
+    http::StatusCode,
     response::{IntoResponse, Response},
     Form,
 };
@@ -43,7 +43,5 @@ pub async fn post(
         .http_only(true)
         .build();
     cookies.add(refresh_cookie);
-    let mut headers = HeaderMap::new();
-    headers.append(AUTH_HEADER, auth_jwt.parse().expect("can't parse auth"));
-    Ok((headers, json!({"jwt":auth_jwt,"ctx":ctx}).to_string()).into_response())
+    Ok((json!({"jwt":auth_jwt,"ctx":ctx}).to_string()).into_response())
 }

@@ -41,7 +41,7 @@ export function TotpForm() {
 
   const validateTotp = useCallback(
     async (values: z.infer<typeof FormSchema>) => {
-      await apiClient.post("/auth/totp", values);
+      await apiClient.post("/api/auth/totp", values);
     },
     [apiClient],
   );

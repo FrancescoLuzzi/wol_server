@@ -53,7 +53,7 @@ pub async fn get_regenerate(
         ctx.as_refresh()
             .with_valid_totp(false)
             .to_jwt(jsonwebtoken::EncodingKey::from_secret(
-                state.hmac_secret.as_bytes(),
+                state.auth_secret.as_bytes(),
             ))?;
     let refresh_cookie = Cookie::build((REFRESH_COOKIE, refresh_jwt))
         .max_age(Duration::days(30))
@@ -120,12 +120,12 @@ pub async fn post_validate(
             match is_valid {
                 true => {
                     let refresh_jwt = ctx.as_refresh().with_valid_totp(true).to_jwt(
-                        jsonwebtoken::EncodingKey::from_secret(state.hmac_secret.as_bytes()),
+                        jsonwebtoken::EncodingKey::from_secret(state.auth_secret.as_bytes()),
                     )?;
                     let auth_token =
                         ctx.as_auth()
                             .to_jwt(jsonwebtoken::EncodingKey::from_secret(
-                                state.hmac_secret.as_bytes(),
+                                state.auth_secret.as_bytes(),
                             ))?;
                     sqlx::query!(
                         r#"UPDATE users
@@ -170,7 +170,7 @@ pub async fn post(
             ))?;
     let mut ctx = Ctx::from_jwt(
         refresh_cookie.value(),
-        &DecodingKey::from_secret(state.hmac_secret.as_bytes()),
+        &DecodingKey::from_secret(state.auth_secret.as_bytes()),
     )?;
 
     let totp_secret = sqlx::query_as!(
@@ -199,7 +199,7 @@ pub async fn post(
         true => {
             let refresh_jwt = ctx
                 .with_valid_totp(true)
-                .to_jwt(EncodingKey::from_secret(state.hmac_secret.as_bytes()))?;
+                .to_jwt(EncodingKey::from_secret(state.auth_secret.as_bytes()))?;
             refresh_cookie.set_value(refresh_jwt.clone());
             Ok((json!({"jwt":refresh_jwt,"ctx":ctx}).to_string()).into_response())
         }

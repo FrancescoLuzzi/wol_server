@@ -32,10 +32,10 @@ pub async fn post(
     tracing::Span::current().record("user_id", tracing::field::display(&user_ctx.user_id));
     let auth_jwt = user_ctx
         .as_auth()
-        .to_jwt(EncodingKey::from_secret(state.hmac_secret.as_bytes()))?;
+        .to_jwt(EncodingKey::from_secret(state.auth_secret.as_bytes()))?;
     let refresh_jwt = user_ctx
         .as_refresh()
-        .to_jwt(EncodingKey::from_secret(state.hmac_secret.as_bytes()))?;
+        .to_jwt(EncodingKey::from_secret(state.auth_secret.as_bytes()))?;
     let refresh_cookie = Cookie::build((REFRESH_COOKIE, refresh_jwt))
         .max_age(Duration::days(30))
         .same_site(SameSite::Lax)

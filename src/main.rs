@@ -74,7 +74,7 @@ async fn main() {
     let app_state = SharedAppState::new(AppState {
         base_url: settings.application.base_url,
         db_pool,
-        hmac_secret: settings.application.hmac_secret,
+        auth_secret: settings.application.auth_secret,
         app_name: settings.application.app_name,
     });
 

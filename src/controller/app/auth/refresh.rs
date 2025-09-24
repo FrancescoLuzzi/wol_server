@@ -25,11 +25,11 @@ pub async fn get(
             ))?;
     let mut ctx = Ctx::from_jwt(
         refresh_cookie.value(),
-        &DecodingKey::from_secret(state.hmac_secret.as_bytes()),
+        &DecodingKey::from_secret(state.auth_secret.as_bytes()),
     )?;
     let auth_jwt = ctx
         .as_auth()
-        .to_jwt(EncodingKey::from_secret(state.hmac_secret.as_bytes()))?;
+        .to_jwt(EncodingKey::from_secret(state.auth_secret.as_bytes()))?;
     dbg!(&auth_jwt);
     let mut headers = HeaderMap::new();
     headers.append(AUTH_HEADER, auth_jwt.parse().expect("can't parse auth"));

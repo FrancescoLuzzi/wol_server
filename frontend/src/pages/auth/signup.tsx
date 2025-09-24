@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/auth";
+import { RedirectIfLoggedIn } from "@/components/auth";
 
 const passwordRequirements = {
   minLength: 8,
@@ -93,7 +94,7 @@ export function SignupForm() {
 
   const { mutate: signup, isPending } = useMutation({
     mutationFn: async (values: z.infer<typeof signupSchema>) => {
-      const { data } = await apiClient.post("/auth/signup", values, {
+      const { data } = await apiClient.post("/api/auth/signup", values, {
         headers: { "content-type": "application/x-www-form-urlencoded" },
       });
       return data;
@@ -119,80 +120,133 @@ export function SignupForm() {
   }, [form.watch("password")]);
 
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit((values) => signup(values))}
-        className="space-y-6"
-      >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <RedirectIfLoggedIn>
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit((values) => signup(values))}
+          className="space-y-6"
+        >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="full_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input placeholder="johndoe123" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={form.control}
-            name="full_name"
+            name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Full Name</FormLabel>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="John Doe" {...field} />
+                  <Input placeholder="email@example.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="Password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      placeholder="Confirm Password"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Password Requirements */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Password must contain:</p>
+            <ul className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+              <li
+                className={`flex items-center ${passwordChecks.minLength ? "text-green-500" : ""}`}
+              >
+                {passwordChecks.minLength ? "✓" : "•"} At least{" "}
+                {passwordRequirements.minLength} characters
+              </li>
+              <li
+                className={`flex items-center ${passwordChecks.hasUppercase ? "text-green-500" : ""}`}
+              >
+                {passwordChecks.hasUppercase ? "✓" : "•"} One uppercase letter
+              </li>
+              <li
+                className={`flex items-center ${passwordChecks.hasLowercase ? "text-green-500" : ""}`}
+              >
+                {passwordChecks.hasLowercase ? "✓" : "•"} One lowercase letter
+              </li>
+              <li
+                className={`flex items-center ${passwordChecks.hasNumber ? "text-green-500" : ""}`}
+              >
+                {passwordChecks.hasNumber ? "✓" : "•"} One number
+              </li>
+              <li
+                className={`flex items-center ${passwordChecks.hasSpecial ? "text-green-500" : ""}`}
+              >
+                {passwordChecks.hasSpecial ? "✓" : "•"} One special character
+              </li>
+            </ul>
+          </div>
+
           <FormField
             control={form.control}
-            name="username"
+            name="request_text"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username</FormLabel>
+                <FormLabel>Request Text</FormLabel>
                 <FormControl>
-                  <Input placeholder="johndoe123" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="email@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="Password" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
-                <FormControl>
-                  <Input
-                    type="password"
-                    placeholder="Confirm Password"
+                  <Textarea
+                    placeholder="Please describe your reason for signing up..."
+                    className="min-h-[100px]"
                     {...field}
                   />
                 </FormControl>
@@ -200,69 +254,18 @@ export function SignupForm() {
               </FormItem>
             )}
           />
-        </div>
 
-        {/* Password Requirements */}
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Password must contain:</p>
-          <ul className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-            <li
-              className={`flex items-center ${passwordChecks.minLength ? "text-green-500" : ""}`}
-            >
-              {passwordChecks.minLength ? "✓" : "•"} At least{" "}
-              {passwordRequirements.minLength} characters
-            </li>
-            <li
-              className={`flex items-center ${passwordChecks.hasUppercase ? "text-green-500" : ""}`}
-            >
-              {passwordChecks.hasUppercase ? "✓" : "•"} One uppercase letter
-            </li>
-            <li
-              className={`flex items-center ${passwordChecks.hasLowercase ? "text-green-500" : ""}`}
-            >
-              {passwordChecks.hasLowercase ? "✓" : "•"} One lowercase letter
-            </li>
-            <li
-              className={`flex items-center ${passwordChecks.hasNumber ? "text-green-500" : ""}`}
-            >
-              {passwordChecks.hasNumber ? "✓" : "•"} One number
-            </li>
-            <li
-              className={`flex items-center ${passwordChecks.hasSpecial ? "text-green-500" : ""}`}
-            >
-              {passwordChecks.hasSpecial ? "✓" : "•"} One special character
-            </li>
-          </ul>
-        </div>
-
-        <FormField
-          control={form.control}
-          name="request_text"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Request Text</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Please describe your reason for signing up..."
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          {form.formState.errors.root && (
+            <p className="text-sm font-medium text-destructive">
+              {form.formState.errors.root.message}
+            </p>
           )}
-        />
 
-        {form.formState.errors.root && (
-          <p className="text-sm font-medium text-destructive">
-            {form.formState.errors.root.message}
-          </p>
-        )}
-
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Creating account..." : "Sign Up"}
-        </Button>
-      </form>
-    </Form>
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? "Creating account..." : "Sign Up"}
+          </Button>
+        </form>
+      </Form>
+    </RedirectIfLoggedIn>
   );
 }

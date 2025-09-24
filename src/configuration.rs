@@ -19,7 +19,7 @@ pub struct ApplicationSettings {
     pub base_url: String,
     pub host: IpAddr,
     pub port: u16,
-    pub hmac_secret: String,
+    pub auth_secret: String,
     pub app_name: String,
 }
 

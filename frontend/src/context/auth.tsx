@@ -42,7 +42,7 @@ const refreshToken = async (
   setState: Dispatch<SetStateAction<AuthState>>,
 ): Promise<boolean> => {
   try {
-    const { data } = await client.get("/auth/refresh");
+    const { data } = await client.get("/api/auth/refresh");
     setState((prev) => ({
       ...prev,
       accessToken: data.jwt,
@@ -112,14 +112,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       accessToken: null,
       ctx: null,
     });
-    await authApiClient.post("/auth/logout");
+    await authApiClient.post("/api/auth/logout");
   }, [authApiClient]);
 
   const login = useCallback(
     async (email: string, password: string) => {
       try {
         const { data } = await authApiClient.post(
-          "/auth/login",
+          "/api/auth/login",
           { email, password },
           { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
         );

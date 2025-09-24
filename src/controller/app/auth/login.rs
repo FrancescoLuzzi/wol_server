@@ -3,13 +3,13 @@ use crate::{
     auth::{
         ctx::Ctx,
         password::{validate_credentials, Credentials},
-        AUTH_HEADER, REFRESH_COOKIE,
+        REFRESH_COOKIE,
     },
     controller::error::GenericAuthError,
 };
 use axum::{
     extract::State,
-    http::{HeaderMap, StatusCode},
+    http::StatusCode,
     response::{IntoResponse, Response},
     Form,
 };
@@ -32,10 +32,10 @@ pub async fn post(
     tracing::Span::current().record("user_id", tracing::field::display(&user_ctx.user_id));
     let auth_jwt = user_ctx
         .as_auth()
-        .to_jwt(EncodingKey::from_secret(state.hmac_secret.as_bytes()))?;
+        .to_jwt(EncodingKey::from_secret(state.auth_secret.as_bytes()))?;
     let refresh_jwt = user_ctx
         .as_refresh()
-        .to_jwt(EncodingKey::from_secret(state.hmac_secret.as_bytes()))?;
+        .to_jwt(EncodingKey::from_secret(state.auth_secret.as_bytes()))?;
     let refresh_cookie = Cookie::build((REFRESH_COOKIE, refresh_jwt))
         .max_age(Duration::days(30))
         .same_site(SameSite::Lax)
@@ -43,7 +43,5 @@ pub async fn post(
         .http_only(true)
         .build();
     cookies.add(refresh_cookie);
-    let mut headers = HeaderMap::new();
-    headers.append(AUTH_HEADER, auth_jwt.parse().expect("can't parse auth"));
-    Ok((headers, json!({"jwt":auth_jwt,"ctx":ctx}).to_string()).into_response())
+    Ok((json!({"jwt":auth_jwt,"ctx":ctx}).to_string()).into_response())
 }

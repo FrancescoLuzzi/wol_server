@@ -106,7 +106,7 @@ where
         {
             let token = Ctx::from_jwt(
                 bearer.token(),
-                &DecodingKey::from_secret(SharedAppState::from_ref(state).hmac_secret.as_bytes()),
+                &DecodingKey::from_secret(SharedAppState::from_ref(state).auth_secret.as_bytes()),
             )?;
 
             Ok(Some(token))

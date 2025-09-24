@@ -1,5 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
-import { ProtectedRoute } from "@/components/auth";
+import { ProtectedRoute, RedirectIfLoggedIn } from "@/components/auth";
 import { Root } from "@/components/root";
 import { RouteError } from "./components/error";
 import { NavigationHeader } from "./components/heading";
@@ -57,7 +57,7 @@ export const router = createBrowserRouter([
       {
         path: "",
         lazy: async () => {
-          const { Home } = await import("./pages/home");
+          const { Home } = await import("./pages/admin/home");
           return { Component: Home };
         },
       },

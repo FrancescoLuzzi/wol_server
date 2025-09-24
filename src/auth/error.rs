@@ -4,6 +4,10 @@ use axum::{http::StatusCode, response::IntoResponse};
 pub enum AuthError {
     #[error("Missing credentials.")]
     MissingCredentials,
+    #[error("Invalid totp")]
+    InvalidTotp,
+    #[error("Invalid totp")]
+    InactiveUser,
     #[error("Invalid credentials.")]
     InvalidCredentials(#[source] anyhow::Error),
     #[error("Invalid jwt.")]
@@ -18,7 +22,9 @@ impl IntoResponse for AuthError {
             AuthError::InvalidCredentials(_) | AuthError::CtxError(_) => {
                 StatusCode::UNAUTHORIZED.into_response()
             }
-            AuthError::MissingCredentials => StatusCode::FORBIDDEN.into_response(),
+            AuthError::MissingCredentials | AuthError::InvalidTotp | AuthError::InactiveUser => {
+                StatusCode::FORBIDDEN.into_response()
+            }
             AuthError::UnexpectedError(error) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("something went wrong {}", error),

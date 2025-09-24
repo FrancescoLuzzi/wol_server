@@ -67,7 +67,6 @@ pub async fn validate_credentials(
     credentials: Credentials,
     pool: &SqlitePool,
 ) -> Result<Ctx, AuthError> {
-    // TODO: return User instead of user_id
     let mut user = None;
     let mut expected_password_hash = "$argon2id$v=19$m=15000,t=2,p=1$\
         gZiV/M1gPc22ElAH/Jh1Hw$\

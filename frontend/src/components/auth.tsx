@@ -7,3 +7,8 @@ export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { ctx } = useAuth();
   return ctx ? children : <Navigate to="/auth/login" />;
 };
+
+export const RedirectIfLoggedIn = ({ children }: { children: ReactNode }) => {
+  const { ctx } = useAuth();
+  return !ctx ? children : <Navigate to="/" />;
+};
